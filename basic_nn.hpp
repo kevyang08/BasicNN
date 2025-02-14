@@ -6,9 +6,10 @@
 
 class neural_network {
 private:
-    std::vector<std::vector<double>> layer;
-    std::vector<std::vector<double>> error;
-    std::vector<std::vector<std::vector<double>>> weights;
+    double **layer;
+    double **error;
+    double ***weights;
+    std::vector<int> layer_sizes;
     double learning_rate;
     int num_layers;
     void forward_propagate(std::vector<double>& inputs);
