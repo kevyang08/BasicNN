@@ -6,6 +6,9 @@
 #include "basic_nn.hpp"
 
 #define BUF_SIZE 5000
+#define NUM_LAYERS 3
+#define RATE 0.1
+#define EPOCHS 6
 
 inline void print_progress(int progress) {
     std::cout << "\r[";
@@ -34,9 +37,9 @@ void read_data(const std::string& filename, std::vector<std::pair<int, std::vect
     }
 }
 int main() {
-    int num_layers = 3;
-    std::vector<int> layer_sizes = {784, 256, 10};
-    double learning_rate = 0.1;
+    int num_layers = NUM_LAYERS;
+    std::vector<int> layer_sizes = {784, 300, 10};
+    double learning_rate = RATE;
     neural_network nn(num_layers, layer_sizes, learning_rate);
 
     std::vector<std::pair<int, std::vector<double>>> data;
@@ -51,8 +54,7 @@ int main() {
     std::clock_t start = std::clock();
 
     // multiple epochs
-    // int epochs = 5;
-    int epochs = 5;
+    int epochs = EPOCHS;
     for (int e = 1; e <= epochs; e++) {
 
         std::cout << "Epoch " << e << "/" << epochs << std::endl;
