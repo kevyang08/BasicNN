@@ -7,7 +7,7 @@
 
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
-#define RATE 0.03
+#define RATE 0.01
 #define EPOCHS 7
 
 inline void print_progress(int progress) {

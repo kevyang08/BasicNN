@@ -1,9 +1,7 @@
 #include <cmath>
 #include <cassert>
 #include <algorithm>
-#include <omp.h>
 #include "basic_nn.hpp"
-// #include "threadpool.hpp"
 
 neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, double learning_rate) {
     assert(num_layers == layer_sizes.size());
@@ -21,7 +19,6 @@ neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, do
         double bounds = sqrt(6)/sqrt(layer_sizes[i - 1] + layer_sizes[i]);
         for (int j = 0; j < layer_sizes[i - 1]; j++) {
             weights[i - 1][j] = (double *)malloc(sizeof(double) * layer_sizes[i]);
-            # pragma omp parallel for
             for (int k = 0; k < layer_sizes[i]; k++) {
                 weights[i - 1][j][k] = randd(-bounds, bounds);
             }
@@ -37,14 +34,11 @@ void neural_network::forward_propagate(std::vector<double>& inputs) {
         layer[0][i] = inputs[i];
     }
     for (int k = 1; k < num_layers; k++) {
-        # pragma omp parallel for
         for (int i = 0; i < layer_sizes[k - 1]; i++) {
-            # pragma omp simd
             for (int j = 0; j < layer_sizes[k]; j++) {
                 layer[k][j] += layer[k - 1][i] * weights[k - 1][i][j];
             }
         }
-        # pragma omp parallel for
         for (int j = 0; j < layer_sizes[k]; j++) {
             layer[k][j] = sigmoid(layer[k][j]);
         }
@@ -57,14 +51,11 @@ void neural_network::backward_propagate(std::vector<double>& expected) {
         error[num_layers - 1][i] = expected[i] - layer[num_layers - 1][i];
     }
     for (int k = num_layers - 1; k > 0; k--) {
-        # pragma omp parallel for
         for (int i = 0; i < layer_sizes[k - 1]; i++) {
             error[k - 1][i] = 0;
-            # pragma omp simd
             for (int j = 0; j < layer_sizes[k]; j++) {
                 error[k - 1][i] += weights[k - 1][i][j] * error[k][j];
             }
-            # pragma omp simd
             for (int j = 0; j < layer_sizes[k]; j++) {
                 weights[k - 1][i][j] += learning_rate * error[k][j] * layer[k][j] * (1 - layer[k][j]) * layer[k - 1][i];
             }
