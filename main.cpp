@@ -35,8 +35,8 @@ void read_data(const std::string& filename, std::vector<std::pair<int, std::vect
 }
 int main() {
     int num_layers = 3;
-    std::vector<int> layer_sizes = {784, 150, 10};
-    double learning_rate = 0.2;
+    std::vector<int> layer_sizes = {784, 256, 10};
+    double learning_rate = 0.1;
     neural_network nn(num_layers, layer_sizes, learning_rate);
 
     std::vector<std::pair<int, std::vector<double>>> data;
@@ -52,7 +52,7 @@ int main() {
 
     // multiple epochs
     // int epochs = 5;
-    int epochs = 1;
+    int epochs = 5;
     for (int e = 1; e <= epochs; e++) {
 
         std::cout << "Epoch " << e << "/" << epochs << std::endl;
