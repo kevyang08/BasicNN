@@ -35,7 +35,7 @@ void read_data(const std::string& filename, std::vector<std::pair<int, std::vect
 }
 int main() {
     int num_layers = 3;
-    std::vector<int> layer_sizes = {784, 150, 10};
+    std::vector<int> layer_sizes = {784, 256, 10};
     double learning_rate = 0.2;
     neural_network nn(num_layers, layer_sizes, learning_rate);
 
