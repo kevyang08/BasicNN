@@ -3,12 +3,14 @@
 #include <string>
 #include <ctime>
 #include <string.h>
+#include <algorithm>
+#include <random>
 #include "basic_nn.hpp"
 
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
-#define RATE 0.01
-#define EPOCHS 7
+#define RATE 0.07
+#define EPOCHS 8
 
 inline void print_progress(int progress) {
     std::cout << "\r[";
@@ -58,6 +60,9 @@ int main() {
     for (int e = 1; e <= epochs; e++) {
 
         std::cout << "Epoch " << e << "/" << epochs << std::endl;
+
+        // randomly shuffle training data
+        std::shuffle(data.begin(), data.end(), std::random_device());
 
         // to reduce redundant updates
         int prev_progress = 0;
