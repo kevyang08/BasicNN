@@ -7,8 +7,8 @@
 
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
-#define RATE 0.1
-#define EPOCHS 6
+#define RATE 0.03
+#define EPOCHS 7
 
 inline void print_progress(int progress) {
     std::cout << "\r[";
@@ -38,7 +38,7 @@ void read_data(const std::string& filename, std::vector<std::pair<int, std::vect
 }
 int main() {
     int num_layers = NUM_LAYERS;
-    std::vector<int> layer_sizes = {784, 300, 10};
+    std::vector<int> layer_sizes = {784, 500, 10};
     double learning_rate = RATE;
     neural_network nn(num_layers, layer_sizes, learning_rate);
 

@@ -63,6 +63,9 @@ void neural_network::backward_propagate(std::vector<double>& expected) {
             # pragma omp simd
             for (int j = 0; j < layer_sizes[k]; j++) {
                 error[k - 1][i] += weights[k - 1][i][j] * error[k][j];
+            }
+            # pragma omp simd
+            for (int j = 0; j < layer_sizes[k]; j++) {
                 weights[k - 1][i][j] += learning_rate * error[k][j] * layer[k][j] * (1 - layer[k][j]) * layer[k - 1][i];
             }
         }
