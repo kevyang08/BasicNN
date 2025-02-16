@@ -10,14 +10,14 @@
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
 #define RATE 0.07
-#define EPOCHS 8
+#define EPOCHS 1
 
 inline void print_progress(int progress) {
     std::cout << "\r[";
     for (int i = 0; i < 50; i++) std::cout << (progress > i * 2 + 1 ? '=' : ' ');
     std::cout << "] " << progress << "%";
 }
-void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<double>>>& data) {
+void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<float>>>& data) {
     std::ifstream input(filename);
     data.clear();
     char buf[BUF_SIZE];
@@ -29,7 +29,7 @@ void read_data(const std::string& filename, std::vector<std::pair<int, std::vect
         if (strlen(buf) == 0) break;
 
         int label = std::stoi(strtok(buf, ","));
-        std::vector<double> values;
+        std::vector<float> values;
         
         while ((tmp = strtok(NULL, ",")) != NULL) {
             values.push_back(std::stoi(tmp)/255.0);
@@ -41,11 +41,11 @@ void read_data(const std::string& filename, std::vector<std::pair<int, std::vect
 int main() {
     int num_layers = NUM_LAYERS;
     std::vector<int> layer_sizes = {784, 500, 10};
-    double learning_rate = RATE;
+    float learning_rate = RATE;
     neural_network nn(num_layers, layer_sizes, learning_rate);
 
-    std::vector<std::pair<int, std::vector<double>>> data;
-    std::vector<double> expected(10);
+    std::vector<std::pair<int, std::vector<float>>> data;
+    std::vector<float> expected(10);
 
     std::cout << "Beginning training with " << num_layers << " layers and a learning rate of " << learning_rate << std::endl;
 
