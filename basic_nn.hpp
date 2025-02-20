@@ -6,19 +6,26 @@
 
 class neural_network {
 private:
-    float **layer;
-    float **error;
+    float ***layer;
+    float ***error;
     float ***weights;
+    float ***delta_w;
     std::vector<int> layer_sizes;
     float learning_rate;
     int num_layers;
-    void forward_propagate(std::vector<float>& inputs);
-    void backward_propagate(std::vector<float>& expected);
+    int max_size;
+    std::vector<std::vector<float>> inputs;
+    std::vector<std::vector<float>> expected;
 
 public:
-    neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate);
-    void train(std::vector<float>& inputs, std::vector<float>& expected);
-    int query(std::vector<float>& inputs);
+    neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, int max_size);
+    void forward_propagate();
+    void backward_propagate();
+    int query();
+    void calc_gradient();
+    void clear_batch();
+    void load_inputs(std::vector<float>& input);
+    void load_expected(std::vector<float> exp);
 };
 
 #endif

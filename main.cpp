@@ -9,8 +9,9 @@
 
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
-#define RATE 0.17
-#define EPOCHS 13
+#define RATE 0.80
+#define EPOCHS 33
+#define BATCH_SIZE 32
 
 inline void print_progress(int progress) {
     std::cout << "\r[";
@@ -42,7 +43,7 @@ int main() {
     int num_layers = NUM_LAYERS;
     std::vector<int> layer_sizes = {784, 500, 10};
     float learning_rate = RATE;
-    neural_network nn(num_layers, layer_sizes, learning_rate);
+    neural_network nn(num_layers, layer_sizes, learning_rate, BATCH_SIZE);
 
     std::vector<std::pair<int, std::vector<float>>> data;
     std::vector<float> expected(10);
@@ -68,14 +69,21 @@ int main() {
         int prev_progress = 0;
         print_progress(0);
 
-        for (int i = 0; i < data.size(); i++) {
-            auto &[label, values] = data[i];
-            std::fill(expected.begin(), expected.end(), 0);
-            expected[label] = 1;
-            nn.train(values, expected);
+        for (size_t i = 0, j = 0; i < data.size(); i += BATCH_SIZE) {
+            for (; j < std::min(data.size(), i + BATCH_SIZE); j++) {
+                auto &[label, values] = data[j];
+                std::fill(expected.begin(), expected.end(), 0);
+                expected[label] = 1;
+                nn.load_inputs(values);
+                nn.load_expected(expected);
+            }
+            nn.forward_propagate();
+            nn.calc_gradient();
+            nn.backward_propagate();
+            nn.clear_batch();
 
             // progress bar
-            int progress = (int)((i + 1.0)/data.size() * 100);
+            int progress = (int)(1.0 * j/data.size() * 100);
             if (progress == prev_progress) continue;
             print_progress(progress);
             prev_progress = progress;
@@ -93,7 +101,9 @@ int main() {
     int num_inputs = data.size(), num_correct = 0;
 
     for (auto &[label, values] : data) {
-        int result = nn.query(values);
+        nn.load_inputs(values);
+        int result = nn.query();
+        nn.clear_batch();
         num_correct += (result == label);
     }
 
