@@ -35,7 +35,7 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
         layer[0][i] = inputs[i];
     }
     for (int k = 1; k < num_layers; k++) {
-        memset(layer[k], 0, sizeof(double) * layer_sizes[k]);
+        std::fill(layer[k], layer[k] + layer_sizes[k], 0);
         for (int i = 0; i < layer_sizes[k - 1]; i++) {
             for (int j = 0; j < layer_sizes[k]; j++) {
                 layer[k][j] += layer[k - 1][i] * weights[k - 1][i][j];
