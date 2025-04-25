@@ -9,8 +9,8 @@
 
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
-#define RATE 0.18
-#define EPOCHS 7
+#define RATE 0.25
+#define EPOCHS 12
 
 inline void print_progress(int progress) {
     std::cout << "\r[";
