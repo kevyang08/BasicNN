@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "basic_nn.hpp"
 
-neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate) {
+neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum) {
     assert(num_layers == layer_sizes.size());
     this -> num_layers = num_layers;
     layer = (float **)malloc(sizeof(float *) * num_layers);
@@ -26,6 +26,7 @@ neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, fl
         }
     }
     this -> learning_rate = learning_rate;
+    this -> momentum = momentum;
     this -> layer_sizes = layer_sizes;
 }
 
@@ -73,4 +74,8 @@ void neural_network::train(std::vector<float>& inputs, std::vector<float>& expec
 int neural_network::query(std::vector<float>& inputs) {
     forward_propagate(inputs);
     return std::max_element(layer[num_layers - 1], layer[num_layers - 1] + layer_sizes[num_layers - 1]) - layer[num_layers - 1];
+}
+
+void neural_network::adjust_lr() {
+    learning_rate *= momentum;
 }
