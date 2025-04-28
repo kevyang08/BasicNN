@@ -10,8 +10,9 @@
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
 #define RATE 0.3
+#define BIAS_RATE 0.001
 #define MOMENTUM 0.9
-#define EPOCHS 10
+#define EPOCHS 3
 
 inline void print_progress(int progress) {
     std::cout << "\r[";
@@ -43,8 +44,9 @@ int main() {
     int num_layers = NUM_LAYERS;
     std::vector<int> layer_sizes = {784, 500, 10};
     float learning_rate = RATE;
+    float bias_rate = BIAS_RATE;
     float momentum = MOMENTUM;
-    neural_network nn(num_layers, layer_sizes, learning_rate, momentum);
+    neural_network nn(num_layers, layer_sizes, learning_rate, bias_rate, momentum);
 
     std::vector<std::pair<int, std::vector<float>>> data;
     std::vector<float> expected(10);

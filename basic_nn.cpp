@@ -4,14 +4,16 @@
 #include <algorithm>
 #include "basic_nn.hpp"
 
-neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum) {
+neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float bias_rate, float momentum) {
     assert(num_layers == layer_sizes.size());
     this -> num_layers = num_layers;
     layer = (float **)malloc(sizeof(float *) * num_layers);
     error = (float **)malloc(sizeof(float *) * num_layers);
+    bias = (float **)malloc(sizeof(float *) * num_layers);
     for (int i = 0; i < num_layers; i++) {
         layer[i] = (float *)calloc(layer_sizes[i], sizeof(float));
         error[i] = (float *)calloc(layer_sizes[i], sizeof(float));
+        bias[i] = (float *)calloc(layer_sizes[i], sizeof(float));
     }
     // Xavier initialization
     weights = (float ***)malloc(sizeof(float **) * (num_layers - 1));
@@ -26,6 +28,7 @@ neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, fl
         }
     }
     this -> learning_rate = learning_rate;
+    this -> bias_rate = bias_rate;
     this -> momentum = momentum;
     this -> layer_sizes = layer_sizes;
 }
@@ -36,7 +39,8 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
         layer[0][i] = inputs[i];
     }
     for (int k = 1; k < num_layers; k++) {
-        std::fill(layer[k], layer[k] + layer_sizes[k], 0);
+        // std::fill(layer[k], layer[k] + layer_sizes[k], 0);
+        for (int j = 0; j < layer_sizes[k]; j++) layer[k][j] = bias[k][j];
         for (int i = 0; i < layer_sizes[k - 1]; i++) {
             for (int j = 0; j < layer_sizes[k]; j++) {
                 layer[k][j] += layer[k - 1][i] * weights[k - 1][i][j];
@@ -61,6 +65,7 @@ void neural_network::backward_propagate(std::vector<float>& expected) {
             }
             for (int j = 0; j < layer_sizes[k]; j++) {
                 weights[k - 1][i][j] += learning_rate * error[k][j] * layer[k][j] * (1 - layer[k][j]) * layer[k - 1][i];
+                bias[k][j] += bias_rate * error[k][j];
             }
         }
     }
