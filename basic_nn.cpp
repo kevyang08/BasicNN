@@ -48,12 +48,17 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
         //     layer[k][j] = sigmoid(layer[k][j]);
         // }
 
+        const float *prev = layer[k - 1];
+        
         #pragma omp parallel for
         for (int j = 0; j < layer_sizes[k]; j++) {
+            const float *w = weights[k - 1][j];
+            float sum = 0.0f;
+            #pragma omp simd reduction(+:sum)
             for (int i = 0; i < layer_sizes[k - 1]; i++) {
-                layer[k][j] += layer[k - 1][i] * weights[k - 1][j][i];
+                sum += prev[i] * w[i];
             }
-            layer[k][j] = sigmoid(layer[k][j]);
+            layer[k][j] = sigmoid(sum);
         }
     }
 }
