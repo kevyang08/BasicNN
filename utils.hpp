@@ -1,8 +1,8 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-double randd(double l, double r);
+float randd(float l, float r);
 
-double sigmoid(double x);
+float sigmoid(float x);
 
 #endif

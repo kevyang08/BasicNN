@@ -4,10 +4,10 @@
 std::random_device rd;
 std::mt19937_64 gen(rd());
 
-double randd(double l, double r) {
-    return std::uniform_real_distribution<double>(l, r)(gen);
+float randd(float l, float r) {
+    return std::uniform_real_distribution<float>(l, r)(gen);
 }
 
-double sigmoid(double x) {
+float sigmoid(float x) {
     return 1/(1 + exp(-x));
 }
