@@ -3,6 +3,7 @@
 #include <cassert>
 #include <algorithm>
 #include <omp.h>
+#include <immintrin.h>
 #include "basic_nn.hpp"
 
 neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum) {
@@ -17,6 +18,14 @@ neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, fl
     // Xavier initialization
     weights = (float ***)malloc(sizeof(float **) * (num_layers - 1));
     for (int i = 1; i < num_layers; i++) {
+        // weights[i - 1] = (float **)malloc(sizeof(float *) * layer_sizes[i - 1]);
+        // float bounds = sqrt(6)/sqrt(layer_sizes[i - 1] + layer_sizes[i]);
+        // for (int j = 0; j < layer_sizes[i - 1]; j++) {
+        //     weights[i - 1][j] = (float *)malloc(sizeof(float) * layer_sizes[i]);
+        //     for (int k = 0; k < layer_sizes[i]; k++) {
+        //         weights[i - 1][j][k] = randd(-bounds, bounds);
+        //     }
+        // }
         // weights is transposed; #rows is size of next layer
         weights[i - 1] = (float **)malloc(sizeof(float *) * layer_sizes[i]);
         float bounds = sqrt(6)/sqrt(layer_sizes[i - 1] + layer_sizes[i]);
@@ -38,7 +47,7 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
         layer[0][i] = inputs[i];
     }
     for (int k = 1; k < num_layers; k++) {
-        std::fill(layer[k], layer[k] + layer_sizes[k], 0);
+        // std::fill(layer[k], layer[k] + layer_sizes[k], 0);
         // for (int i = 0; i < layer_sizes[k - 1]; i++) {
         //     for (int j = 0; j < layer_sizes[k]; j++) {
         //         layer[k][j] += layer[k - 1][i] * weights[k - 1][i][j];
@@ -49,12 +58,12 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
         // }
 
         const float *prev = layer[k - 1];
-        
-        #pragma omp parallel for
+
+        #pragma omp parallel for schedule(static, BLK_SIZE)
         for (int j = 0; j < layer_sizes[k]; j++) {
             const float *w = weights[k - 1][j];
             float sum = 0.0f;
-            #pragma omp simd reduction(+:sum)
+            #pragma omp simd reduction(+:sum) simdlen(8)
             for (int i = 0; i < layer_sizes[k - 1]; i++) {
                 sum += prev[i] * w[i];
             }
@@ -87,7 +96,7 @@ void neural_network::backward_propagate(std::vector<float>& expected) {
             }
         }
 
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(static, BLK_SIZE)
         for (int j = 0; j < layer_sizes[k]; j++) {
             for (int i = 0; i < layer_sizes[k - 1]; i++) {
                 weights[k - 1][j][i] += learning_rate * error[k][j] * layer[k][j] * (1 - layer[k][j]) * layer[k - 1][i];
