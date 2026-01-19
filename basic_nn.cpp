@@ -41,6 +41,7 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
         for (int i = 0; i < layer_sizes[k - 1]; i++) {
             const float *w = weights[k - 1][i];
             const float l_pi = layer[k - 1][i];
+            #pragma omp simd
             for (int j = 0; j < layer_sizes[k]; j++) {
                 layer[k][j] += l_pi * w[j];
             }
