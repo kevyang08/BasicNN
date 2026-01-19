@@ -62,11 +62,6 @@ void neural_network::backward_propagate(std::vector<float>& expected) {
         for (int j = 0; j < layer_sizes[k]; j++) {
             for (int i = 0; i < layer_sizes[k - 1]; i++) {
                 error[k - 1][i] += weights[k - 1][j][i] * error[k][j];
-            }
-        }
-
-        for (int j = 0; j < layer_sizes[k]; j++) {
-            for (int i = 0; i < layer_sizes[k - 1]; i++) {
                 weights[k - 1][j][i] += learning_rate * error[k][j] * layer[k][j] * (1 - layer[k][j]) * layer[k - 1][i];
             }
         }
