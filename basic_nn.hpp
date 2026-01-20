@@ -1,11 +1,12 @@
 #ifndef BASIC_NN_HPP
 #define BASIC_NN_HPP
 
-#include <vector>
 #include "utils.hpp"
+#include <vector>
 
 class neural_network {
 private:
+    bool verbose;
     float **layer;
     float **error;
     float ***weights;
@@ -17,8 +18,9 @@ private:
     void backward_propagate(std::vector<float>& expected);
 
 public:
-    neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum);
-    void train(std::vector<float>& inputs, std::vector<float>& expected);
+    neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum, bool verbose);
+    // void train(std::vector<float>& inputs, std::vector<float>& expected);
+    void train(std::vector<std::pair<int, std::vector<float>>>& data, int epochs);
     int query(std::vector<float>& inputs);
     void adjust_lr();
 };

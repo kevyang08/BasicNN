@@ -1,12 +1,14 @@
+#include "basic_nn.hpp"
+#include <iostream>
+#include <random>
 #include <cmath>
 #include <cstring>
 #include <cassert>
 #include <algorithm>
 #include <omp.h>
 #include <immintrin.h>
-#include "basic_nn.hpp"
 
-neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum) {
+neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum, bool verbose=false) {
     assert(num_layers == layer_sizes.size());
     this -> num_layers = num_layers;
     layer = (float **)malloc(sizeof(float *) * num_layers);
@@ -31,6 +33,7 @@ neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, fl
     this -> learning_rate = learning_rate;
     this -> momentum = momentum;
     this -> layer_sizes = layer_sizes;
+    this -> verbose = verbose;
 }
 
 void neural_network::forward_propagate(std::vector<float>& inputs) {
@@ -103,9 +106,57 @@ void neural_network::backward_propagate(std::vector<float>& expected) {
     }
 }
 
-void neural_network::train(std::vector<float>& inputs, std::vector<float>& expected) {
-    forward_propagate(inputs);
-    backward_propagate(expected);
+// void neural_network::train(std::vector<float>& inputs, std::vector<float>& expected) {
+//     forward_propagate(inputs);
+//     backward_propagate(expected);
+// }
+
+void neural_network::train(std::vector<std::pair<int, std::vector<float>>>& data, int epochs) {
+    std::cout << "Beginning training with " << num_layers << " layers and a learning rate of " << learning_rate << std::endl;
+
+    auto print_progress = [](int progress) {
+        std::cout << "\r[";
+        for (int i = 0; i < 50; i++) std::cout << (progress > i * 2 + 1 ? '=' : ' ');
+        std::cout << "] " << progress << "%";
+    };
+    
+    std::vector<float> expected(10);
+
+    for (int e = 1; e <= epochs; e++) {
+
+        std::cout << "Epoch " << e << "/" << epochs << std::endl;
+
+        // randomly shuffle training data
+        std::shuffle(data.begin(), data.end(), std::random_device());
+
+        // to reduce redundant updates
+        int prev_progress = 0;
+        if (verbose) {
+            print_progress(0);
+        }
+
+        for (int i = 0; i < data.size(); i++) {
+            auto &[label, values] = data[i];
+            std::fill(expected.begin(), expected.end(), 0);
+            expected[label] = 1;
+
+            // nn.train(values, expected);
+            forward_propagate(values);
+            backward_propagate(expected);
+
+            // progress bar
+            if (verbose) {
+                int progress = (int)((i + 1.0)/data.size() * 100);
+                if (progress == prev_progress) continue;
+                print_progress(progress);
+                prev_progress = progress;
+            }
+        }
+
+        std::cout << std::endl;
+
+        adjust_lr();
+    }
 }
 
 int neural_network::query(std::vector<float>& inputs) {

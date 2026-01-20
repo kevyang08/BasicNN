@@ -2,22 +2,17 @@
 #include <fstream>
 #include <string>
 #include <ctime>
-#include <string.h>
 #include <algorithm>
-#include <random>
+#include <string.h>
 #include "basic_nn.hpp"
 
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
 #define RATE 0.34
 #define MOMENTUM 0.9
-#define EPOCHS 1
+#define EPOCHS 10
+#define DEBUG 0
 
-inline void print_progress(int progress) {
-    std::cout << "\r[";
-    for (int i = 0; i < 50; i++) std::cout << (progress > i * 2 + 1 ? '=' : ' ');
-    std::cout << "] " << progress << "%";
-}
 void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<float>>>& data) {
     std::ifstream input(filename);
     data.clear();
@@ -44,12 +39,9 @@ int main() {
     std::vector<int> layer_sizes = {784, 500, 10};
     float learning_rate = RATE;
     float momentum = MOMENTUM;
-    neural_network nn(num_layers, layer_sizes, learning_rate, momentum);
+    neural_network nn(num_layers, layer_sizes, learning_rate, momentum, DEBUG);
 
     std::vector<std::pair<int, std::vector<float>>> data;
-    std::vector<float> expected(10);
-
-    std::cout << "Beginning training with " << num_layers << " layers and a learning rate of " << learning_rate << std::endl;
 
     read_data("mnist_train.csv", data);
 
@@ -57,37 +49,7 @@ int main() {
     double duration;
     std::clock_t start = std::clock();
 
-    // multiple epochs
-    int epochs = EPOCHS;
-    for (int e = 1; e <= epochs; e++) {
-
-        std::cout << "Epoch " << e << "/" << epochs << std::endl;
-
-        // randomly shuffle training data
-        std::shuffle(data.begin(), data.end(), std::random_device());
-
-        // to reduce redundant updates
-        int prev_progress = 0;
-        print_progress(0);
-
-        for (int i = 0; i < data.size(); i++) {
-            auto &[label, values] = data[i];
-            std::fill(expected.begin(), expected.end(), 0);
-            expected[label] = 1;
-            nn.train(values, expected);
-
-            // progress bar
-            int progress = (int)((i + 1.0)/data.size() * 100);
-            if (progress == prev_progress) continue;
-            print_progress(progress);
-            prev_progress = progress;
-        }
-
-        std::cout << std::endl;
-
-        nn.adjust_lr();
-
-    }
+    nn.train(data, EPOCHS);
 
     duration = (std::clock() - start)/(double)CLOCKS_PER_SEC;
     std::cout<<"Training completed in "<< duration << " seconds" << std::endl;
