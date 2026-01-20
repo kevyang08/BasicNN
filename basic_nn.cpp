@@ -3,6 +3,7 @@
 #include <cassert>
 #include <algorithm>
 #include <omp.h>
+#include <immintrin.h>
 #include "basic_nn.hpp"
 
 neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum) {
@@ -39,13 +40,41 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
     }
     for (int k = 1; k < num_layers; k++) {
         const float *prev = layer[k - 1];
-        for (int j = 0; j < layer_sizes[k]; j++) {
+        const int n = layer_sizes[k];
+        const int m = layer_sizes[k - 1];
+
+        for (int j = 0; j < n; j++) {
             const float *w = weights[k - 1][j];
-            float sum = 0.0f;
-            #pragma omp simd reduction(+:sum) simdlen(8)
-            for (int i = 0; i < layer_sizes[k - 1]; i++) {
+            
+#ifdef __AVX__
+            __m256 acc0 = _mm256_setzero_ps();
+            __m256 acc1 = _mm256_setzero_ps();
+
+            int i = 0;
+            // SIMD FMA intrinsics
+            for (; i + 15 < m; i += 16) {
+                acc0 = _mm256_fmadd_ps(_mm256_loadu_ps(prev + i), _mm256_loadu_ps(w + i), acc0);
+                acc1 = _mm256_fmadd_ps(_mm256_loadu_ps(prev + i + 8), _mm256_loadu_ps(w + i + 8), acc1);
+            }
+
+            acc0 = _mm256_add_ps(acc0, acc1);
+
+            alignas(32) float tmp[8];
+            _mm256_store_ps(tmp, acc0);
+
+            float sum = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
+
+            for (; i < m; i++) {
                 sum += prev[i] * w[i];
             }
+#else
+            float sum = 0.0f;
+            #pragma omp simd reduction(+:sum) simdlen(8)
+            for (int i = 0; i < m; i++) {
+                sum += prev[i] * w[i];
+            }
+#endif
+
             layer[k][j] = sigmoid(sum);
         }
     }
@@ -57,12 +86,18 @@ void neural_network::backward_propagate(std::vector<float>& expected) {
         error[num_layers - 1][i] = expected[i] - layer[num_layers - 1][i];
     }
     for (int k = num_layers - 1; k > 0; k--) {
-        std::fill(error[k - 1], error[k - 1] + layer_sizes[k - 1], 0);
+        const int n = layer_sizes[k];
+        const int m = layer_sizes[k - 1];
 
-        for (int j = 0; j < layer_sizes[k]; j++) {
-            for (int i = 0; i < layer_sizes[k - 1]; i++) {
-                error[k - 1][i] += weights[k - 1][j][i] * error[k][j];
-                weights[k - 1][j][i] += learning_rate * error[k][j] * layer[k][j] * (1 - layer[k][j]) * layer[k - 1][i];
+        std::fill(error[k - 1], error[k - 1] + m, 0);
+
+        for (int j = 0; j < n; j++) {
+            const float e_kj = error[k][j];
+            const float dt = learning_rate * e_kj * layer[k][j] * (1 - layer[k][j]);
+
+            for (int i = 0; i < m; i++) {
+                error[k - 1][i] += weights[k - 1][j][i] * e_kj;
+                weights[k - 1][j][i] += dt * layer[k - 1][i];
             }
         }
     }
