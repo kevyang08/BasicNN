@@ -94,15 +94,56 @@ void neural_network::backward_propagate(std::vector<float>& expected) {
 
         std::fill(error[k - 1], error[k - 1] + m, 0);
 
-        for (int j = 0; j < n; j++) {
-            const float e_kj = error[k][j];
-            const float dt = learning_rate * e_kj * layer[k][j] * (1 - layer[k][j]);
+        // for (int j = 0; j < n; j++) {
+        //     const float e_kj = error[k][j];
+        //     const float dt = learning_rate * e_kj * layer[k][j] * (1 - layer[k][j]);
 
-            for (int i = 0; i < m; i++) {
-                error[k - 1][i] += weights[k - 1][j][i] * e_kj;
-                weights[k - 1][j][i] += dt * layer[k - 1][i];
+        //     for (int i = 0; i < m; i++) {
+        //         error[k - 1][i] += weights[k - 1][j][i] * e_kj;
+        //         weights[k - 1][j][i] += dt * layer[k - 1][i];
+        //     }
+        // }
+
+
+        //------------------------------TESTING THREADPOOL VS OPENMP-------------------------------------
+
+        for (int j = 0; j < layer_sizes[k]; j++) { // make separate to prevent need for sync
+            for (int i = 0; i < layer_sizes[k - 1]; i++) {
+                error[k - 1][i] += weights[k - 1][j][i] * error[k][j];
             }
         }
+
+        const int BLK_SZ = (n + NUM_THREADS - 1)/NUM_THREADS;
+        for (int idx = 0; idx < n; idx += BLK_SZ) {
+            const int start = idx;
+            const int end = std::min(n, start + BLK_SZ);
+            tp.enqueue([k, n, m, start, end, this]() {
+                for (int j = start; j < end; j++) {
+                    const float e_kj = error[k][j];
+                    const float dt = learning_rate * e_kj * layer[k][j] * (1 - layer[k][j]);
+
+                    for (int i = 0; i < m; i++) {
+                        weights[k - 1][j][i] += dt * layer[k - 1][i];
+                    }
+                }
+            });
+        }
+        tp.wait_all();
+
+        // const int BLK_SZ = (n + NUM_THREADS - 1)/NUM_THREADS;
+        // #pragma omp parallel for num_threads(NUM_THREADS)
+        // for (int idx = 0; idx < n; idx += BLK_SZ) {
+        //     const int start = idx;
+        //     const int end = std::min(n, start + BLK_SZ);
+        //     for (int j = start; j < end; j++) {
+        //         const float e_kj = error[k][j];
+        //         const float dt = learning_rate * e_kj * layer[k][j] * (1 - layer[k][j]);
+
+        //         for (int i = 0; i < m; i++) {
+        //             weights[k - 1][j][i] += dt * layer[k - 1][i];
+        //         }
+        //     }
+        // }
     }
 }
 
