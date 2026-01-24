@@ -49,7 +49,29 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
         for (int j = 0; j < n; j++) {
             const float *w = weights[k - 1][j];
             
-#ifdef __AVX__
+#ifdef __AVX512F__
+            __m512 acc0 = _mm512_setzero_ps();
+            __m512 acc1 = _mm512_setzero_ps();
+
+            int i = 0;
+            // SIMD FMA intrinsics
+            for (; i + 31 < m; i += 32) {
+                acc0 = _mm512_fmadd_ps(_mm512_loadu_ps(prev + i), _mm512_loadu_ps(w + i), acc0);
+                acc1 = _mm512_fmadd_ps(_mm512_loadu_ps(prev + i + 16), _mm512_loadu_ps(w + i + 16), acc1);
+            }
+
+            acc0 = _mm512_add_ps(acc0, acc1);
+
+            alignas(32) float tmp[16];
+            _mm512_store_ps(tmp, acc0);
+
+            float sum = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7]
+                        + tmp[8] + tmp[9] + tmp[10] + tmp[11] + tmp[12] + tmp[13] + tmp[14] + tmp[15];
+
+            for (; i < m; i++) {
+                sum += prev[i] * w[i];
+            }
+#elif defined(__AVX__)
             __m256 acc0 = _mm256_setzero_ps();
             __m256 acc1 = _mm256_setzero_ps();
 
