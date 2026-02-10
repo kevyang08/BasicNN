@@ -10,7 +10,7 @@
 #define NUM_LAYERS 3
 #define RATE 0.34
 #define MOMENTUM 0.9
-#define EPOCHS 10
+#define EPOCHS 1
 #define DEBUG 0
 
 void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<float>>>& data) {

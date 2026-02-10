@@ -9,6 +9,7 @@
 #include <immintrin.h>
 
 neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum, bool verbose=false) {
+    assert(layer_sizes.size() > 0);
     assert(num_layers == layer_sizes.size());
     this -> num_layers = num_layers;
     layer = (float **)malloc(sizeof(float *) * num_layers);
