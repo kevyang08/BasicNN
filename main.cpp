@@ -13,6 +13,8 @@
 #define EPOCHS 1
 #define DEBUG 0
 
+// TODO: next steps - profiling, GPU offloading
+
 void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<float>>>& data) {
     std::ifstream input(filename);
     data.clear();
