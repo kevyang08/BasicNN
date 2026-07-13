@@ -13,7 +13,7 @@
 #define EPOCHS 1
 #define DEBUG 0
 
-// TODO: next steps - profiling, GPU offloading
+// TODO: next steps - AVX512 memory alignment, profiling, GPU offloading
 
 void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<float>>>& data) {
     std::ifstream input(filename);
