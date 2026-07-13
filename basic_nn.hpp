@@ -7,10 +7,11 @@
 class neural_network {
 private:
     bool verbose;
-    float **layer;
-    float **error;
-    float ***weights;
-    std::vector<int> layer_sizes;
+    std::vector<float> layer;
+    std::vector<float> error;
+    std::vector<float> weights;
+    std::vector<int> layer_bounds;
+    std::vector<int> weights_bounds;
     float learning_rate;
     float momentum;
     int num_layers;

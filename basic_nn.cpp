@@ -12,43 +12,47 @@ neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, fl
     assert(layer_sizes.size() > 0);
     assert(num_layers == layer_sizes.size());
     this -> num_layers = num_layers;
-    layer = (float **)malloc(sizeof(float *) * num_layers);
-    error = (float **)malloc(sizeof(float *) * num_layers);
-    for (int i = 0; i < num_layers; i++) {
-        layer[i] = (float *)calloc(layer_sizes[i], sizeof(float));
-        error[i] = (float *)calloc(layer_sizes[i], sizeof(float));
-    }
-    // Xavier initialization
-    weights = (float ***)malloc(sizeof(float **) * (num_layers - 1));
+    layer.resize(std::accumulate(layer_sizes.begin(), layer_sizes.end(), 0));
+    error.resize(std::accumulate(layer_sizes.begin(), layer_sizes.end(), 0));
+    layer_bounds.resize(num_layers + 1);
+    std::partial_sum(layer_sizes.begin(), layer_sizes.end(), layer_bounds.begin() + 1);
+
+    // alloc weights
+    int w_size = 0;
+    weights_bounds.resize(num_layers);
     for (int i = 1; i < num_layers; i++) {
+        w_size += layer_sizes[i] * layer_sizes[i - 1];
+        weights_bounds[i] = w_size;
+    }
+    weights.resize(w_size);
+
+    // Xavier initialization
+    for (int k = 1; k < num_layers; k++) {
         // weights is transposed; #rows is size of next layer
-        weights[i - 1] = (float **)malloc(sizeof(float *) * layer_sizes[i]);
-        float bounds = sqrt(6)/sqrt(layer_sizes[i - 1] + layer_sizes[i]);
-        for (int j = 0; j < layer_sizes[i]; j++) {
-            weights[i - 1][j] = (float *)malloc(sizeof(float) * layer_sizes[i - 1]);
-            for (int k = 0; k < layer_sizes[i - 1]; k++) {
-                weights[i - 1][j][k] = randd(-bounds, bounds);
-            }
+        float bounds = sqrt(6)/sqrt(layer_sizes[k - 1] + layer_sizes[k]);
+        for (int i = weights_bounds[k - 1]; i < weights_bounds[k]; i++) {
+            weights[i] = randd(-bounds, bounds);
         }
     }
     this -> learning_rate = learning_rate;
     this -> momentum = momentum;
-    this -> layer_sizes = layer_sizes;
     this -> verbose = verbose;
 }
 
 void neural_network::forward_propagate(std::vector<float>& inputs) {
-    assert(inputs.size() == layer_sizes[0]);
+    assert(inputs.size() == layer_bounds[1]);
     for (int i = 0; i < inputs.size(); i++) {
-        layer[0][i] = inputs[i];
+        layer[i] = inputs[i];
     }
     for (int k = 1; k < num_layers; k++) {
-        const float *prev = layer[k - 1];
-        const int n = layer_sizes[k];
-        const int m = layer_sizes[k - 1];
+        const int curr_offset = layer_bounds[k];
+        const float *prev = &layer[layer_bounds[k - 1]];
+        const int n = layer_bounds[k + 1] - layer_bounds[k];
+        const int m = layer_bounds[k] - layer_bounds[k - 1];
+        const int w_offset = weights_bounds[k - 1];
 
         for (int j = 0; j < n; j++) {
-            const float *w = weights[k - 1][j];
+            const float *w = &weights[w_offset + j * m];
             
 #ifdef __AVX512F__
             __m512 acc0 = _mm512_setzero_ps();
@@ -101,29 +105,34 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
             }
 #endif
 
-            layer[k][j] = sigmoid(sum);
+            layer[j + curr_offset] = sigmoid(sum);
         }
     }
 }
 
 void neural_network::backward_propagate(std::vector<float>& expected) {
-    assert(expected.size() == layer_sizes[num_layers - 1]);
+    assert(expected.size() == layer_bounds[num_layers] - layer_bounds[num_layers - 1]);
+    const int offset = layer_bounds[num_layers - 1];
     for (int i = 0; i < expected.size(); i++) {
-        error[num_layers - 1][i] = expected[i] - layer[num_layers - 1][i];
+        error[i + offset] = expected[i] - layer[i + offset];
     }
     for (int k = num_layers - 1; k > 0; k--) {
-        const int n = layer_sizes[k];
-        const int m = layer_sizes[k - 1];
+        const int curr_offset = layer_bounds[k];
+        const int prev_offset = layer_bounds[k - 1];
+        const int w_offset = weights_bounds[k - 1];
 
-        std::fill(error[k - 1], error[k - 1] + m, 0);
+        const int n = layer_bounds[k + 1] - layer_bounds[k];
+        const int m = layer_bounds[k] - layer_bounds[k - 1];
+
+        std::fill(error.begin() + prev_offset, error.begin() + prev_offset + m, 0);
 
         for (int j = 0; j < n; j++) {
-            const float e_kj = error[k][j];
-            const float dt = learning_rate * e_kj * layer[k][j] * (1 - layer[k][j]);
+            const float e_kj = error[j + curr_offset];
+            const float dt = learning_rate * e_kj * layer[j + curr_offset] * (1 - layer[j + curr_offset]);
 
             for (int i = 0; i < m; i++) {
-                error[k - 1][i] += weights[k - 1][j][i] * e_kj;
-                weights[k - 1][j][i] += dt * layer[k - 1][i];
+                error[i + prev_offset] += weights[w_offset + j * m + i] * e_kj;
+                weights[w_offset + j * m + i] += dt * layer[i + prev_offset];
             }
         }
     }
@@ -184,7 +193,7 @@ void neural_network::train(std::vector<std::pair<int, std::vector<float>>>& data
 
 int neural_network::query(std::vector<float>& inputs) {
     forward_propagate(inputs);
-    return std::max_element(layer[num_layers - 1], layer[num_layers - 1] + layer_sizes[num_layers - 1]) - layer[num_layers - 1];
+    return std::max_element(layer.begin() + layer_bounds[num_layers - 1], layer.end()) - (layer.begin() + layer_bounds[num_layers - 1]);
 }
 
 void neural_network::adjust_lr() {
