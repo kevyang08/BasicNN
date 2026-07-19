@@ -1,6 +1,6 @@
 #include "basic_nn.hpp"
 #include <algorithm>
-#include <ctime>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -48,13 +48,13 @@ int main() {
     read_data("mnist_train.csv", data);
 
     // time how long training takes
-    double duration;
-    std::clock_t start = std::clock();
+    auto start = std::chrono::steady_clock::now();
 
     nn.train(data, EPOCHS);
 
-    duration = (std::clock() - start)/(double)CLOCKS_PER_SEC;
-    std::cout<<"Training completed in "<< duration << " seconds" << std::endl;
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout<<"Training completed in "<< duration.count()/1000.0 << " seconds" << std::endl;
 
     read_data("mnist_test.csv", data);
 
