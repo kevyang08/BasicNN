@@ -1,5 +1,4 @@
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#pragma once
 
 #include <new>
 #include <numeric>
@@ -19,7 +18,7 @@ struct AlignedAllocator {
         using other = AlignedAllocator<U, Alignment>;
     };
 
-    T *allocate(std::size_t n) {
+    [[nodiscard]] T *allocate(std::size_t n) {
         if (n == 0) return nullptr;
         if (n > std::numeric_limits<std::size_t>::max()/sizeof(T)) throw std::bad_alloc();
         std::size_t size = n * sizeof(T);
@@ -28,6 +27,7 @@ struct AlignedAllocator {
     }
 
     void deallocate(T *p, std::size_t) noexcept {
+        if (p == nullptr) return;
         ::operator delete(p, std::align_val_t(Alignment));
     }
 
@@ -39,5 +39,3 @@ struct AlignedAllocator {
 float randd(float l, float r);
 
 float sigmoid(float x);
-
-#endif

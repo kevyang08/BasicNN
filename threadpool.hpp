@@ -1,5 +1,4 @@
-#ifndef THREADPOOL_HPP
-#define THREADPOOL_HPP
+#pragma once
 
 #include <condition_variable>
 #include <functional>
@@ -53,5 +52,3 @@ public:
         tasks.emplace(move(task));
     }
 };
-
-#endif

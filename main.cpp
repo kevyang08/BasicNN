@@ -11,7 +11,6 @@
 #define RATE 0.34
 #define MOMENTUM 0.9
 #define EPOCHS 1
-#define DEBUG 0
 
 // TODO: next steps - profiling, GPU offloading
 
@@ -41,7 +40,7 @@ int main() {
     std::vector<int> layer_sizes = {784, 500, 10};
     float learning_rate = RATE;
     float momentum = MOMENTUM;
-    neural_network nn(num_layers, layer_sizes, learning_rate, momentum, DEBUG);
+    neural_network nn(num_layers, layer_sizes, learning_rate, momentum, 0);
 
     std::vector<std::pair<int, std::vector<float>>> data;
 

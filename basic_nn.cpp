@@ -1,4 +1,5 @@
 #include "basic_nn.hpp"
+#include "progress_bar.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -8,10 +9,13 @@
 #include <immintrin.h>
 #include <omp.h>
 
-neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum, bool verbose=false) {
+neural_network::neural_network(const int num_layers,
+                               std::vector<int>& layer_sizes,
+                               const float learning_rate,
+                               const float momentum,
+                               const bool verbose=false) : num_layers{num_layers}, verbose{verbose} {
     assert(layer_sizes.size() > 0);
     assert(num_layers == layer_sizes.size());
-    this -> num_layers = num_layers;
     layer.resize(std::accumulate(layer_sizes.begin(), layer_sizes.end(), 0));
     error.resize(std::accumulate(layer_sizes.begin(), layer_sizes.end(), 0));
     layer_bounds.resize(num_layers + 1);
@@ -34,9 +38,8 @@ neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, fl
             weights[i] = randd(-bounds, bounds);
         }
     }
-    this -> learning_rate = learning_rate;
-    this -> momentum = momentum;
-    this -> verbose = verbose;
+    this->learning_rate = learning_rate;
+    this->momentum = momentum;
 }
 
 void neural_network::forward_propagate(std::vector<float>& inputs) {
@@ -146,28 +149,29 @@ void neural_network::backward_propagate(std::vector<float>& expected) {
 // }
 
 void neural_network::train(std::vector<std::pair<int, std::vector<float>>>& data, int epochs) {
-    std::cout << "Beginning training with " << num_layers << " layers and a learning rate of " << learning_rate << std::endl;
-
-    auto print_progress = [](int progress) {
-        std::cout << "\r[";
-        for (int i = 0; i < 50; i++) std::cout << (progress > i * 2 + 1 ? '=' : ' ');
-        std::cout << "] " << progress << "%";
-    };
+    auto progress_bar = [&]() -> std::unique_ptr<ProgressBar> {
+        if (verbose) [[unlikely]] {
+            return std::make_unique<VerboseProgressBar>(epochs, data.size());
+        }
+        return std::make_unique<NullProgressBar>();
+    }();
+    if (verbose) [[unlikely]] {
+        std::cout << "Beginning training with " << num_layers << " layers and a learning rate of " << learning_rate << std::endl;
+    }
     
     std::vector<float> expected(10);
 
     for (int e = 1; e <= epochs; e++) {
 
-        std::cout << "Epoch " << e << "/" << epochs << std::endl;
+        // print epoch
+        progress_bar->update_epoch(e);
 
         // randomly shuffle training data
         std::shuffle(data.begin(), data.end(), std::random_device());
 
-        // to reduce redundant updates
-        int prev_progress = 0;
-        if (verbose) {
-            print_progress(0);
-        }
+        // print initial progress bar
+        progress_bar->update_progress(0);
+        progress_bar->start_print_progress();
 
         for (int i = 0; i < data.size(); i++) {
             auto &[label, values] = data[i];
@@ -178,16 +182,11 @@ void neural_network::train(std::vector<std::pair<int, std::vector<float>>>& data
             forward_propagate(values);
             backward_propagate(expected);
 
-            // progress bar
-            if (verbose) {
-                int progress = (int)((i + 1.0)/data.size() * 100);
-                if (progress == prev_progress) continue;
-                print_progress(progress);
-                prev_progress = progress;
-            }
+            // update progress bar
+            progress_bar->update_progress(i);
         }
 
-        std::cout << std::endl;
+        progress_bar->end_print_progress();
 
         adjust_lr();
     }

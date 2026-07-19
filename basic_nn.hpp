@@ -1,12 +1,12 @@
-#ifndef BASIC_NN_HPP
-#define BASIC_NN_HPP
+#pragma once
 
 #include "utils.hpp"
 #include <vector>
 
 class neural_network {
 private:
-    bool verbose;
+    const int num_layers;
+    const bool verbose;
     std::vector<float, AlignedAllocator<float, 64>> layer;
     std::vector<float, AlignedAllocator<float, 64>> error;
     std::vector<float, AlignedAllocator<float, 64>> weights;
@@ -14,7 +14,6 @@ private:
     std::vector<int> weights_bounds;
     float learning_rate;
     float momentum;
-    int num_layers;
     void forward_propagate(std::vector<float>& inputs);
     void backward_propagate(std::vector<float>& expected);
 
@@ -25,5 +24,3 @@ public:
     int query(std::vector<float>& inputs);
     void adjust_lr();
 };
-
-#endif
