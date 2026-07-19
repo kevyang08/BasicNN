@@ -7,9 +7,9 @@
 class neural_network {
 private:
     bool verbose;
-    std::vector<float> layer;
-    std::vector<float> error;
-    std::vector<float> weights;
+    std::vector<float, AlignedAllocator<float, 64>> layer;
+    std::vector<float, AlignedAllocator<float, 64>> error;
+    std::vector<float, AlignedAllocator<float, 64>> weights;
     std::vector<int> layer_bounds;
     std::vector<int> weights_bounds;
     float learning_rate;
