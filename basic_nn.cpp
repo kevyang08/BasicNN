@@ -66,12 +66,7 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
             }
 
             acc0 = _mm512_add_ps(acc0, acc1);
-
-            alignas(32) float tmp[16];
-            _mm512_store_ps(tmp, acc0);
-
-            float sum = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7]
-                        + tmp[8] + tmp[9] + tmp[10] + tmp[11] + tmp[12] + tmp[13] + tmp[14] + tmp[15];
+            float sum = _mm512_reduce_add_ps(acc0);
 
             for (; i < m; i++) {
                 sum += prev[i] * w[i];
@@ -89,10 +84,17 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
 
             acc0 = _mm256_add_ps(acc0, acc1);
 
-            alignas(32) float tmp[8];
-            _mm256_store_ps(tmp, acc0);
+            // 1. Fold 8 floats into 4 floats
+            __m128 sum_128  = _mm_add_ps(_mm256_castps256_ps128(acc0), _mm256_extractf128_ps(acc0, 1)); // [A, B, C, D]
 
-            float sum = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
+            // 2. Fold 4 floats into 2 floats
+            sum_128 = _mm_add_ps(sum_128, _mm_movehdup_ps(sum_128)); // [A + B, B + B, C + D, D + D]
+
+            // 3. Fold 2 floats into the final scalar sum
+            sum_128 = _mm_add_ss(sum_128, _mm_movehl_ps(sum_128, sum_128)); // [A + B + C + D, B + B, C + D, D + D]
+
+            // 4. Extract the single final float
+            float sum = _mm_cvtss_f32(sum_128);
 
             for (; i < m; i++) {
                 sum += prev[i] * w[i];

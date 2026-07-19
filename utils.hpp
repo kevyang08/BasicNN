@@ -2,10 +2,14 @@
 #define UTILS_HPP
 
 #include <new>
+#include <numeric>
 
 template <typename T, std::size_t Alignment>
 struct AlignedAllocator {
     using value_type = T;
+        
+    static_assert(Alignment >= alignof(T), "Alignment must be at least alignof(T)");
+    static_assert((Alignment & (Alignment - 1)) == 0, "Alignment must be a power of two");
 
     AlignedAllocator() noexcept = default;
     template <typename U> AlignedAllocator(const AlignedAllocator<U, Alignment>&) noexcept {}
@@ -15,20 +19,15 @@ struct AlignedAllocator {
         using other = AlignedAllocator<U, Alignment>;
     };
 
-    T* allocate(std::size_t n) {
+    T *allocate(std::size_t n) {
         if (n == 0) return nullptr;
-        // Size must be a multiple of alignment for std::aligned_alloc
+        if (n > std::numeric_limits<std::size_t>::max()/sizeof(T)) throw std::bad_alloc();
         std::size_t size = n * sizeof(T);
-        std::size_t remainder = size % Alignment;
-        if (remainder != 0) size += (Alignment - remainder);
-
-        // void* ptr = std::aligned_alloc(Alignment, size);
-        void* ptr = ::operator new(size, std::align_val_t(Alignment));
+        void *ptr = ::operator new(size, std::align_val_t(Alignment));
         return static_cast<T*>(ptr);
     }
 
-    void deallocate(T* p, std::size_t) noexcept {
-        // std::free(p);
+    void deallocate(T *p, std::size_t) noexcept {
         ::operator delete(p, std::align_val_t(Alignment));
     }
 
@@ -36,12 +35,6 @@ struct AlignedAllocator {
     template <typename U>
     friend bool operator==(const AlignedAllocator&, const AlignedAllocator<U, Alignment>&) noexcept { return true; }
 };
-
-// // Equality operators required by allocator traits
-// template <typename T, typename U, std::size_t Align>
-// bool operator==(const AlignedAllocator<T, Align>&, const AlignedAllocator<U, Align>&) { return true; }
-// template <typename T, typename U, std::size_t Align>
-// bool operator!=(const AlignedAllocator<T, Align>&, const AlignedAllocator<U, Align>&) { return false; }
 
 float randd(float l, float r);
 
