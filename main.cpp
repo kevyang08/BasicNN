@@ -1,10 +1,10 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <ctime>
-#include <algorithm>
-#include <string.h>
 #include "basic_nn.hpp"
+#include <algorithm>
+#include <ctime>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <string.h>
 
 #define BUF_SIZE 5000
 #define NUM_LAYERS 3
@@ -13,7 +13,7 @@
 #define EPOCHS 1
 #define DEBUG 0
 
-// TODO: next steps - AVX512 memory alignment, profiling, GPU offloading
+// TODO: next steps - better handling of remainder elements, profiling, GPU offloading
 
 void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<float>>>& data) {
     std::ifstream input(filename);

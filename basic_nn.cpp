@@ -1,12 +1,12 @@
 #include "basic_nn.hpp"
-#include <iostream>
-#include <random>
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstring>
-#include <cassert>
-#include <algorithm>
-#include <omp.h>
+#include <iostream>
+#include <random>
 #include <immintrin.h>
+#include <omp.h>
 
 neural_network::neural_network(int num_layers, std::vector<int>& layer_sizes, float learning_rate, float momentum, bool verbose=false) {
     assert(layer_sizes.size() > 0);

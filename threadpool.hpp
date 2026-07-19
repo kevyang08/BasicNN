@@ -2,11 +2,11 @@
 #define THREADPOOL_HPP
 
 #include <condition_variable>
-#include <thread>
+#include <functional>
 #include <mutex>
 #include <queue>
+#include <thread>
 #include <vector>
-#include <functional>
 
 class threadpool {
 private:
