@@ -15,7 +15,7 @@
 constexpr int EPOCHS = 1;
 constexpr bool VERBOSE = 0;
 
-// TODO: next steps - profiling, GPU offloading
+// TODO: next steps - profiling (including p50-p99 latencies for forward/backward propagate), GPU offloading
 
 void read_data(const std::string& filename, std::vector<std::pair<int, std::vector<float>>>& data) {
     std::ifstream input(filename);

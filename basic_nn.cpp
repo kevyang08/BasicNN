@@ -75,7 +75,7 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
             for (; i < m; i++) {
                 sum += prev[i] * w[i];
             }
-#elif defined(__AVX__)
+#elif defined(__AVX2__)
             __m256 acc0 = _mm256_setzero_ps();
             __m256 acc1 = _mm256_setzero_ps();
 
@@ -136,10 +136,51 @@ void neural_network::backward_propagate() {
             const float e_kj = error[j + curr_offset];
             const float dt = learning_rate * e_kj * layer[j + curr_offset] * (1 - layer[j + curr_offset]);
 
-            for (int i = 0; i < m; i++) {
-                error[i + prev_offset] += weights[w_offset + j * m + i] * e_kj;
-                weights[w_offset + j * m + i] += dt * layer[i + prev_offset];
+            float *prev_error = &error[prev_offset];
+            float *w = &weights[w_offset + j * m];
+            const float *prev = &layer[prev_offset];
+            
+#ifdef __AVX512F__
+            __m512 e_kj_avx = _mm512_set1_ps(e_kj);
+            __m512 dt_avx = _mm512_set1_ps(dt);
+
+            int i = 0;
+            // SIMD FMA intrinsics
+            for (; i + 31 < m; i += 32) {
+                _mm512_storeu_ps(prev_error + i, _mm512_fmadd_ps(e_kj_avx, _mm512_loadu_ps(w + i), _mm512_loadu_ps(prev_error + i)));
+                _mm512_storeu_ps(prev_error + i + 16, _mm512_fmadd_ps(e_kj_avx, _mm512_loadu_ps(w + i + 16), _mm512_loadu_ps(prev_error + i + 16)));
+                _mm512_storeu_ps(w + i, _mm512_fmadd_ps(dt_avx, _mm512_loadu_ps(prev + i), _mm512_loadu_ps(w + i)));
+                _mm512_storeu_ps(w + i + 16, _mm512_fmadd_ps(dt_avx, _mm512_loadu_ps(prev + i + 16), _mm512_loadu_ps(w + i + 16)));
             }
+
+            for (; i < m; i++) {
+                prev_error[i] += w[i] * e_kj;
+                w[i] += dt * prev[i];
+            }
+#elif defined(__AVX2__)
+            __m256 e_kj_avx = _mm256_set1_ps(e_kj);
+            __m256 dt_avx = _mm256_set1_ps(dt);
+
+            int i = 0;
+            // SIMD FMA intrinsics
+            for (; i + 15 < m; i += 16) {
+                _mm256_storeu_ps(prev_error + i, _mm256_fmadd_ps(e_kj_avx, _mm256_loadu_ps(w + i), _mm256_loadu_ps(prev_error + i)));
+                _mm256_storeu_ps(prev_error + i + 8, _mm256_fmadd_ps(e_kj_avx, _mm256_loadu_ps(w + i + 8), _mm256_loadu_ps(prev_error + i + 8)));
+                _mm256_storeu_ps(w + i, _mm256_fmadd_ps(dt_avx, _mm256_loadu_ps(prev + i), _mm256_loadu_ps(w + i)));
+                _mm256_storeu_ps(w + i + 8, _mm256_fmadd_ps(dt_avx, _mm256_loadu_ps(prev + i + 8), _mm256_loadu_ps(w + i + 8)));
+            }
+
+            for (; i < m; i++) {
+                prev_error[i] += w[i] * e_kj;
+                w[i] += dt * prev[i];
+            }
+#else
+            #pragma omp simd simdlen(8)
+            for (int i = 0; i < m; i++) {
+                prev_error[i] += w[i] * e_kj;
+                w[i] += dt * prev[i];
+            }
+#endif
         }
     }
 }
