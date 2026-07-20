@@ -6,6 +6,6 @@ find_package(OpenMP REQUIRED)
 
 add_compile_options(-O3 -fopenmp -march=native -std=c++20 -g)
 
-add_executable(main ./basic_nn.cpp ./basic_nn.hpp ./main.cpp ./utils.cpp ./utils.hpp ./threadpool.hpp ./progress_bar.hpp)
+add_executable(main ./basic_nn.cpp ./basic_nn.hpp ./main.cpp ./utils.hpp ./threadpool.hpp ./progress_bar.hpp)
 
 target_link_libraries(main OpenMP::OpenMP_CXX)

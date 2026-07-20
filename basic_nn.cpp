@@ -69,8 +69,7 @@ void neural_network::forward_propagate(std::vector<float>& inputs) {
                 acc1 = _mm512_fmadd_ps(_mm512_loadu_ps(prev + i + 16), _mm512_loadu_ps(w + i + 16), acc1);
             }
 
-            acc0 = _mm512_add_ps(acc0, acc1);
-            float sum = _mm512_reduce_add_ps(acc0);
+            float sum = _mm512_reduce_add_ps(_mm512_add_ps(acc0, acc1));
 
             for (; i < m; i++) {
                 sum += prev[i] * w[i];

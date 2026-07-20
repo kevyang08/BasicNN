@@ -2,6 +2,7 @@
 
 #include <new>
 #include <numeric>
+#include <random>
 
 template <typename T, std::size_t Alignment>
 struct AlignedAllocator {
@@ -36,6 +37,13 @@ struct AlignedAllocator {
     friend bool operator==(const AlignedAllocator&, const AlignedAllocator<U, Alignment>&) noexcept { return true; }
 };
 
-float randd(float l, float r);
+inline std::random_device rd;
+inline std::mt19937_64 gen(rd());
 
-float sigmoid(float x);
+inline float randd(const float l, const float r) {
+    return std::uniform_real_distribution<float>(l, r)(gen);
+}
+
+inline float sigmoid(const float x) {
+    return 1/(1 + exp(-x));
+}
