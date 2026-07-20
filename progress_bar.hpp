@@ -7,10 +7,10 @@
 #include <thread>
 
 struct ProgressBar {
-    virtual void update_epoch(const int cur_epoch) const {}
-    virtual void update_progress(const int cur_progress) {}
-    virtual void start_print_progress() {}
-    virtual void end_print_progress() {}
+    virtual void update_epoch(const int cur_epoch) const = 0;
+    virtual void update_progress(const int cur_progress) = 0;
+    virtual void start_print_progress() = 0;
+    virtual void end_print_progress() = 0;
 };
 
 struct VerboseProgressBar : ProgressBar {
